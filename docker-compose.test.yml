@@ -1,0 +1,72 @@
+version: "3.9"
+
+# =============================================================================
+# Imposter Within — Test Environment
+#
+# Usage:
+#   docker compose -f docker-compose.test.yml up --build          # run all
+#   docker compose -f docker-compose.test.yml up --build backend  # backend only
+#   docker compose -f docker-compose.test.yml up --build frontend # frontend only
+#
+# Reports land in ./test-reports/ on the host.
+# =============================================================================
+
+services:
+
+  # ── Backend ─────────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.test
+    container_name: iw_backend_tests
+    volumes:
+      # Mount reports directory so HTML coverage is accessible on host
+      - ./test-reports/backend:/reports
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    # Override to run only fast unit tests:
+    # command: ["python", "-m", "pytest", "tests/test_game_logic.py", "-v"]
+
+  # ── Frontend ─────────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.test
+    container_name: iw_frontend_tests
+    volumes:
+      - ./test-reports/frontend:/app/coverage
+    environment:
+      - CI=true
+      - NODE_ENV=test
+
+  # ── Combined reporter (prints summary after both finish) ───────────────────
+  reporter:
+    image: alpine:3.19
+    container_name: iw_test_reporter
+    depends_on:
+      - backend
+      - frontend
+    volumes:
+      - ./test-reports:/reports:ro
+    command: >
+      sh -c "
+        echo '';
+        echo '═══════════════════════════════════════';
+        echo '  🕵️  Imposter Within — Test Reports';
+        echo '═══════════════════════════════════════';
+        echo '';
+        if [ -f /reports/backend/junit.xml ]; then
+          echo '✅ Backend JUnit XML:   /test-reports/backend/junit.xml';
+          echo '📊 Backend Coverage:   /test-reports/backend/coverage_html/index.html';
+        else
+          echo '⚠️  Backend reports not found';
+        fi;
+        if [ -d /reports/frontend/lcov-report ]; then
+          echo '✅ Frontend Coverage:  /test-reports/frontend/lcov-report/index.html';
+        else
+          echo '⚠️  Frontend coverage not found';
+        fi;
+        echo '';
+        echo 'All tests completed.';
+      "
