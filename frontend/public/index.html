@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="theme-color" content="#050508" />
+    <meta name="description" content="Imposter Within — a real-time multiplayer social deduction party game for 3 to 20 players." />
+
+    <!-- Open Graph / social sharing -->
+    <meta property="og:title"       content="Imposter Within" />
+    <meta property="og:description" content="Find the Imposter. 3–20 players. One secret word." />
+    <meta property="og:type"        content="website" />
+
+    <title>Imposter Within</title>
+
+    <!-- Preconnect to Google Fonts to reduce latency -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!--
+      Syne       — display / heading font (weights 400, 600, 700, 800)
+      Space Mono — monospace font used for room codes and role cards
+    -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Minimal page reset applied before React mounts -->
+    <style>
+      *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html {
+        font-size: 16px;
+        -webkit-text-size-adjust: 100%;
+      }
+
+      body {
+        background-color: #050508;
+        color: #e8e8f0;
+        overflow-x: hidden;
+        /* Prevent flash of unstyled text on slow connections */
+        font-family: 'Syne', system-ui, sans-serif;
+      }
+
+      /* Hide the root div until React hydrates it */
+      #root:empty {
+        display: none;
+      }
+
+      /* Ensure full-viewport height for the React tree */
+      #root {
+        min-height: 100vh;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- React mounts here -->
+    <div id="root"></div>
+
+    <!--
+      If JavaScript is disabled, show a friendly fallback.
+      React removes this noscript block once it hydrates.
+    -->
+    <noscript>
+      <div style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        font-family: system-ui, sans-serif;
+        color: #e8e8f0;
+        background: #050508;
+        text-align: center;
+        padding: 24px;
+      ">
+        <p>
+          Imposter Within requires JavaScript to run.<br />
+          Please enable JavaScript in your browser settings and reload the page.
+        </p>
+      </div>
+    </noscript>
+  </body>
+</html>

@@ -1,0 +1,57 @@
+# ============================================================
+# Imposter Within — Frontend Test Image
+# ============================================================
+# Build:  docker build -f Dockerfile.test -t iw-frontend-tests .
+# Run:    docker run --rm -v $(pwd)/coverage:/app/coverage iw-frontend-tests
+# ============================================================
+
+FROM node:20-slim
+
+LABEL maintainer="imposter-within"
+LABEL description="Frontend test environment for Imposter Within"
+LABEL version="1.0.0"
+
+# ── Working directory ────────────────────────────────────────
+WORKDIR /app
+
+# ── Install dependencies ─────────────────────────────────────
+# Copy the lockfiles FIRST so Docker can cache the npm install
+# layer and only re-run it when dependencies actually change.
+#
+# package-lock.json must exist locally before building.
+# Generate it with:  npm install  (do NOT commit node_modules)
+COPY package.json package-lock.json ./
+
+# npm ci:
+#   - Reads package-lock.json exactly (reproducible builds)
+#   - Fails if package.json and lockfile are out of sync
+#   - Faster than npm install in CI environments
+RUN npm ci --legacy-peer-deps
+
+# ── Application source ───────────────────────────────────────
+COPY public/           ./public/
+COPY src/              ./src/
+COPY babel.config.js   ./
+COPY jest.config.js    ./
+
+# ── Non-root user (security best practice) ───────────────────
+RUN useradd --create-home --shell /bin/sh testrunner \
+    && chown -R testrunner:testrunner /app
+USER testrunner
+
+# ── Coverage output volume ───────────────────────────────────
+# Mount a host directory here to persist coverage reports:
+#   docker run -v $(pwd)/test-reports/frontend:/app/coverage ...
+VOLUME ["/app/coverage"]
+
+# ── Default command ──────────────────────────────────────────
+# CI=true  → disables interactive watch mode in react-scripts
+# --watchAll=false → run once and exit (no file watching)
+# --forceExit     → kill the process after tests finish
+#                   (prevents Jest worker threads from hanging)
+# --coverage      → generate lcov / html coverage reports
+CMD ["npx", "react-scripts", "test", \
+     "--watchAll=false", \
+     "--forceExit", \
+     "--coverage", \
+     "--ci"]
