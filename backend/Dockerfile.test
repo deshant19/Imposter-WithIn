@@ -1,0 +1,63 @@
+# ============================================================
+# Imposter Within — Backend Test Image
+# ============================================================
+# Build:  docker build -f Dockerfile.test -t iw-backend-tests .
+# Run:    docker run --rm -v $(pwd)/reports:/reports iw-backend-tests
+# ============================================================
+
+FROM python:3.12-slim
+
+LABEL maintainer="imposter-within"
+LABEL description="Backend test environment for Imposter Within"
+LABEL version="1.0.0"
+
+# ── System dependencies ──────────────────────────────────────
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        curl \
+        gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Working directory ────────────────────────────────────────
+WORKDIR /app
+
+# ── Python dependencies ──────────────────────────────────────
+# Copy requirements first so Docker layer-caches the install
+# step and only re-runs it when requirements files change.
+COPY requirements.txt requirements-test.txt ./
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements-test.txt
+
+# ── Application source ───────────────────────────────────────
+COPY main.py     ./
+COPY pytest.ini  ./
+COPY tests/      ./tests/
+
+# ── Database seed ────────────────────────────────────────────
+# Tests redirect all I/O to tmp_path via conftest autouse
+# fixture, but the directory must exist at startup.
+RUN mkdir -p data && echo '{}' > data/rooms.json
+
+# ── Non-root user (security best practice) ───────────────────
+RUN useradd --create-home --shell /bin/bash testrunner \
+    && chown -R testrunner:testrunner /app
+USER testrunner
+
+# ── Report output volume ─────────────────────────────────────
+# Mount a host directory here to persist coverage reports:
+#   docker run -v $(pwd)/test-reports:/reports ...
+VOLUME ["/reports"]
+
+# ── Default command ──────────────────────────────────────────
+# Runs the full suite with coverage.
+# Override at runtime, e.g.:
+#   docker run ... iw-backend-tests pytest tests/test_game_logic.py -v
+CMD ["python", "-m", "pytest", "tests/", \
+     "-v", \
+     "--tb=short", \
+     "--cov=main", \
+     "--cov-report=term-missing", \
+     "--cov-report=html:/reports/coverage_html", \
+     "--cov-report=xml:/reports/coverage.xml", \
+     "--junit-xml=/reports/junit.xml", \
+     "--no-cov-on-fail"]
